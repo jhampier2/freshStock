@@ -69,15 +69,45 @@ if (isset($_GET['editar']) && is_numeric($_GET['editar']) && $editData === null)
     $editData = $stmt->fetch();
 }
 
-// ── LISTAR TODOS ──────────────────────────────────────────────────────────────
+// ── LISTAR / FILTRAR ─────────────────────────────────────────────────────────
 $filtro = trim($_GET['q'] ?? '');
-if ($filtro !== '') {
-    $stmt = $pdo->prepare("SELECT * FROM productos WHERE nombre LIKE ? ORDER BY nombre ASC");
-    $stmt->execute(["%$filtro%"]);
-} else {
-    $stmt = $pdo->query("SELECT * FROM productos ORDER BY fecha_vencimiento ASC");
-}
+$estadoFiltro = trim($_GET['estado'] ?? '');
+$stockFiltro = trim($_GET['stock_filtro'] ?? '');
+
+$stmt = $pdo->query("SELECT * FROM productos ORDER BY fecha_vencimiento ASC");
 $productos = $stmt->fetchAll();
+
+// Filtro por nombre
+if ($filtro !== '') {
+    $productos = array_filter($productos, function ($p) use ($filtro) {
+        return stripos($p['nombre'], $filtro) !== false;
+    });
+}
+
+// Filtro por estado
+if ($estadoFiltro !== '') {
+    $productos = array_filter($productos, function ($p) use ($estadoFiltro) {
+        $estado = estadoProducto($p['stock'], $p['stock_min'], $p['fecha_vencimiento']);
+        return $estado === $estadoFiltro;
+    });
+}
+
+// Filtro solo por stock
+if ($stockFiltro !== '') {
+    $productos = array_filter($productos, function ($p) use ($stockFiltro) {
+        if ($stockFiltro === 'bajo') {
+            return (int)$p['stock'] <= (int)$p['stock_min'];
+        }
+
+        if ($stockFiltro === 'normal') {
+            return (int)$p['stock'] > (int)$p['stock_min'];
+        }
+
+        return true;
+    });
+}
+
+$productos = array_values($productos);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -199,10 +229,37 @@ $productos = $stmt->fetchAll();
 
   <!-- ── FILTRO ── -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px">
-    <form method="GET" action="productos.php" style="display:flex;gap:8px;flex:1;max-width:360px">
-      <input type="text" name="q" placeholder="Buscar producto..." value="<?= htmlspecialchars($filtro) ?>" style="flex:1">
-      <button type="submit" class="btn btn-ghost"><i class="bi bi-search"></i> Buscar</button>
-      <?php if ($filtro): ?><a href="productos.php" class="btn btn-ghost"><i class="bi bi-x"></i></a><?php endif; ?>
+    <form method="GET" action="productos.php" style="display:flex;gap:8px;flex:1;max-width:620px">
+      <input 
+        type="text" 
+        name="q" 
+        placeholder="Buscar producto..." 
+        value="<?= htmlspecialchars($filtro) ?>" 
+        style="flex:1"
+      >
+
+      <select name="estado" style="max-width:180px;min-height:42px" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        <option value="ok" <?= $estadoFiltro === 'ok' ? 'selected' : '' ?>>Correcto</option>
+        <option value="por_vencer" <?= $estadoFiltro === 'por_vencer' ? 'selected' : '' ?>>Por vencer</option>
+        <option value="vencido" <?= $estadoFiltro === 'vencido' ? 'selected' : '' ?>>Vencido</option>
+      </select>
+
+      <select name="stock_filtro" style="max-width:180px;min-height:42px" onchange="this.form.submit()">
+        <option value="">Todo el stock</option>
+        <option value="bajo" <?= $stockFiltro === 'bajo' ? 'selected' : '' ?>>Stock bajo</option>
+        <option value="normal" <?= $stockFiltro === 'normal' ? 'selected' : '' ?>>Stock normal</option>
+      </select>
+
+      <button type="submit" class="btn btn-ghost">
+        <i class="bi bi-search"></i> Buscar
+      </button>
+
+      <?php if ($filtro || $estadoFiltro || $stockFiltro): ?>
+        <a href="productos.php" class="btn btn-ghost">
+          <i class="bi bi-x"></i>
+        </a>
+      <?php endif; ?>
     </form>
     <div class="stats-row">
       <span class="stat-chip"><i class="bi bi-box"></i> <?= count($productos) ?> producto(s)</span>
@@ -216,7 +273,12 @@ $productos = $stmt->fetchAll();
       <?php if (empty($productos)): ?>
         <div class="empty-state">
           <div class="empty-icon"><i class="bi bi-box" style="font-size: 2.5rem;"></i></div>
-          <div class="empty-text">No hay productos registrados<?= $filtro ? " para \"$filtro\"" : '' ?>.</div>
+          <div class="empty-text">
+            No hay productos registrados
+            <?= $filtro ? ' para "' . htmlspecialchars($filtro) . '"' : '' ?>
+            <?= $estadoFiltro ? ' con el estado seleccionado' : '' ?>
+            <?= $stockFiltro ? ' con el filtro de stock seleccionado' : '' ?>.
+          </div>
         </div>
       <?php else: ?>
       <table>
