@@ -108,6 +108,17 @@ if ($stockFiltro !== '') {
 }
 
 $productos = array_values($productos);
+// ── PAGINACIÓN ─────────────────────────────────────────
+$porPagina = 5;
+$totalProductos = count($productos);
+$totalPaginas = ceil($totalProductos / $porPagina);
+
+$paginaActual = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($paginaActual < 1) $paginaActual = 1;
+if ($paginaActual > $totalPaginas) $paginaActual = $totalPaginas;
+
+$inicio = ($paginaActual - 1) * $porPagina;
+$productos = array_slice($productos, $inicio, $porPagina);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -345,6 +356,34 @@ $productos = array_values($productos);
       </table>
       <?php endif; ?>
     </div>
+<!-- 🔽 PEGAR AQUÍ LA PAGINACIÓN -->
+<?php if ($totalPaginas > 1): ?>
+<div style="display:flex;justify-content:center;gap:6px;padding:16px">
+
+  <?php if ($paginaActual > 1): ?>
+    <a class="btn btn-ghost btn-sm" href="?<?= http_build_query(array_merge($_GET, ['page' => $paginaActual - 1])) ?>">
+      ←
+    </a>
+  <?php endif; ?>
+
+  <?php for ($i = 1; $i <= $totalPaginas; $i++): ?>
+    <a class="btn btn-sm <?= $i == $paginaActual ? 'btn-primary' : 'btn-ghost' ?>"
+       href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>">
+       <?= $i ?>
+    </a>
+  <?php endfor; ?>
+
+  <?php if ($paginaActual < $totalPaginas): ?>
+    <a class="btn btn-ghost btn-sm" href="?<?= http_build_query(array_merge($_GET, ['page' => $paginaActual + 1])) ?>">
+      →
+    </a>
+  <?php endif; ?>
+
+</div>
+<?php endif; ?>
+<!-- 🔼 FIN -->
+
+</div> <!-- section-card -->
   </div>
 
 </main>
