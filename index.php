@@ -132,29 +132,6 @@ $topGanancia = $pdo->query("
       <div class="kpi-label">Ganancia Estimada</div>
     </div>
   </div>
-
-  <!-- Alertas críticas -->
-  <?php if (count($vencidos) > 0): ?>
-  <div class="alert alert-danger">
-    <i class="bi bi-exclamation-triangle"></i> <strong><?= count($vencidos) ?> producto(s) vencido(s)</strong> — Requieren retiro inmediato del inventario.
-    <a href="productos.php" style="margin-left:8px;color:inherit;text-decoration:underline;">Ver productos →</a>
-  </div>
-  <?php endif; ?>
-
-  <?php if (count($porVencer) > 0): ?>
-  <div class="alert alert-warn">
-    <i class="bi bi-exclamation-octagon"></i> <strong><?= count($porVencer) ?> producto(s) por vencer</strong> en los próximos 30 días — Prioriza su venta.
-  </div>
-  <?php endif; ?>
-
-  <?php if (count($bajoStock) > 0): ?>
-  <div class="alert" style="background:var(--info-dim);border-color:var(--info)44;color:var(--info)">
-    <i class="bi bi-graph-down"></i> <strong><?= count($bajoStock) ?> producto(s) con bajo stock</strong> — Considera reabastecer pronto.
-  </div>
-  <?php endif; ?>
-
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:4px">
-
     <!-- Productos por vencer -->
     <div class="section-card">
       <div class="section-head">
