@@ -49,6 +49,22 @@ $topGanancia = $pdo->query("
     ORDER BY ganancia_total DESC
     LIMIT 5
 ")->fetchAll();
+
+// ── Datos para gráficos ──────────────────────────────────────────────────────
+$grafGanancias = $pdo->query("
+    SELECT 
+        nombre,
+        ROUND((precio_venta - precio_compra) * stock, 2) AS ganancia_total
+    FROM productos
+    ORDER BY ganancia_total DESC
+    LIMIT 8
+")->fetchAll();
+
+$grafEstados = [
+    'ok' => max(0, (int)$kpis['total'] - (int)$kpis['vencidos'] - (int)$kpis['por_vencer']),
+    'vencidos' => (int)$kpis['vencidos'],
+    'por_vencer' => (int)$kpis['por_vencer']
+];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -57,6 +73,7 @@ $topGanancia = $pdo->query("
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FreshStock · Dashboard</title>
 <link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -164,6 +181,26 @@ $topGanancia = $pdo->query("
         <?php endif; ?>
       </div>
     </div>
+      <!-- Gráficos Dashboard -->
+  <div style="display:grid;grid-template-columns:1.4fr .8fr;gap:20px;margin-bottom:24px">
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title"><i class="bi bi-bar-chart"></i> Ganancias por Producto</span>
+      </div>
+      <div style="padding:22px;height:280px">
+        <canvas id="chartGanancias"></canvas>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title"><i class="bi bi-pie-chart"></i> Estado de Productos</span>
+      </div>
+      <div style="padding:22px;height:280px">
+        <canvas id="chartEstados"></canvas>
+      </div>
+    </div>
+  </div>
 
     <!-- Top ganancias -->
     <div class="section-card">
@@ -229,21 +266,76 @@ $topGanancia = $pdo->query("
 
 </main>
 <script>
-  // FRANCOTIRADOR ANTI-CACHE: Detecta si el usuario usó el botón "Atrás"
-  
-  // 1. Método moderno (Performance Navigation API)
-  const perfEntries = performance.getEntriesByType("navigation");
-  if (perfEntries.length > 0 && perfEntries[0].type === "back_forward") {
-      // Si detecta que volvimos por el historial, fuerza la recarga desde el servidor
-      window.location.reload(true);
-  }
+const gananciasLabels = <?= json_encode(array_column($grafGanancias, 'nombre')) ?>;
+const gananciasData = <?= json_encode(array_map('floatval', array_column($grafGanancias, 'ganancia_total'))) ?>;
 
-  // 2. Método de respaldo (Para Safari y móviles que congelan pestañas)
-  window.addEventListener('pageshow', function(event) {
-      if (event.persisted) {
-          window.location.reload(true);
+const estadosLabels = ['OK', 'Vencidos', 'Por vencer'];
+const estadosData = [
+  <?= (int)$grafEstados['ok'] ?>,
+  <?= (int)$grafEstados['vencidos'] ?>,
+  <?= (int)$grafEstados['por_vencer'] ?>
+];
+
+new Chart(document.getElementById('chartGanancias'), {
+  type: 'bar',
+  data: {
+    labels: gananciasLabels,
+    datasets: [{
+      data: gananciasData,
+      backgroundColor: gananciasData.map(v => v >= 0 ? 'rgba(34,197,94,.75)' : 'rgba(239,68,68,.75)'),
+      borderColor: gananciasData.map(v => v >= 0 ? 'rgb(34,197,94)' : 'rgb(239,68,68)'),
+      borderWidth: 1,
+      borderRadius: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { ticks: { callback: value => 'S/ ' + value } }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartEstados'), {
+  type: 'doughnut',
+  data: {
+    labels: estadosLabels,
+    datasets: [{
+      data: estadosData,
+      backgroundColor: [
+        'rgba(34,197,94,.85)',
+        'rgba(239,68,68,.85)',
+        'rgba(245,158,11,.85)'
+      ],
+      borderWidth: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '68%',
+    plugins: {
+      legend: {
+        position: 'bottom'
       }
-  });
+    }
+  }
+});
+
+// Anti-cache
+const perfEntries = performance.getEntriesByType("navigation");
+if (perfEntries.length > 0 && perfEntries[0].type === "back_forward") {
+  window.location.reload(true);
+}
+
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) {
+    window.location.reload(true);
+  }
+});
 </script>
 </body>
 </html>
