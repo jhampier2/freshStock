@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ip_cliente     = $_SERVER['REMOTE_ADDR'];
 
     // A) LIMPIEZA AUTOMÁTICA: Borramos los intentos fallidos de hace más de 15 minutos
-    $pdo->query("DELETE FROM login_attempts WHERE fecha < (NOW() - INTERVAL 15 MINUTE)");
+    $pdo->query("DELETE FROM login_attempts WHERE fecha < (NOW() - INTERVAL 10 SECOND)");
 
     // B) VERIFICACIÓN DE BLOQUEO: Contamos cuántas veces ha fallado esta IP recientemente
     $stmt_check = $pdo->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_address = ?");

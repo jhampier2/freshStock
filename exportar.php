@@ -542,12 +542,14 @@ $exportLog = $_SESSION['export_log'] ?? [];
 
 /* ── Valor total inventario ─────────────────────────────────────────────────── */
 .inv-value-card {
-  background: linear-gradient(135deg, rgba(108,99,255,.15), rgba(167,139,250,.08));
-  border: 1px solid rgba(108,99,255,.25);
+  background: rgba(28, 27, 32, 0.97); /* mismo tono oscuro sin degradado */
+  border: 1px solid rgb(53, 53, 56);
   border-radius: 14px;
   padding: 20px 24px;
   margin-bottom: 24px;
-  display: flex; align-items: center; gap: 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
   flex-wrap: wrap;
 }
 .inv-value-icon {
